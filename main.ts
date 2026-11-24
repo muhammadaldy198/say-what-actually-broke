@@ -1,42 +1,29 @@
-// Say What Actually Broke — one honest error line, written to /output/entry.txt.
-// The line names the real failure (an accented name mangled by the database),
-// tells the user what to do next, and lets the apology carry the bug itself.
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+// Say What Actually Broke — resubmit v2 (rebuild from scratch).
+// One line of honest software error copy: the calendar invite that
+// went to all 4,000 employees, including the boss's boss.
+// Beat 1: the leak (all 4,000). Beat 2: the boss's boss already accepted. Beat 3: the fix, starting with him.
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const LINE =
-  "Your name has an accent our database can't pronounce, so it turned you into 'Jos?'. Type it without the accent for now — we are very sorry, Jos?.";
+  "Your private meeting invite went to all 4,000 employees, including your boss's boss, who has already accepted. Uninvite everyone, starting with him.";
 
-function countCodePoints(text: string): number {
-  return [...text].length;
+if (LINE.length < 1 || LINE.length > 200) {
+  throw new Error(`line must be 1-200 characters, got ${LINE.length}`);
+}
+if (LINE.trim().length === 0) {
+  throw new Error("line must not be whitespace-only");
+}
+if (LINE.includes("\n")) {
+  throw new Error("line must be a single line");
 }
 
-function assertGate(text: string): void {
-  const chars = countCodePoints(text);
-  if (chars < 1 || chars > 200) {
-    throw new Error(`entry must be 1-200 characters, got ${chars}`);
-  }
-  if (text.trim().length === 0) {
-    throw new Error("entry must not be only whitespace");
-  }
-  if (text.includes("\n") || text.includes("\r")) {
-    throw new Error("entry must be a single line");
-  }
-  // Invisible whitespace (non-breaking space, zero-width space) would
-  // silently change the judged bytes without showing on screen.
-  if (/[\u00a0\u200b]/.test(text)) {
-    throw new Error("entry must not contain invisible whitespace");
-  }
+mkdirSync("/output", { recursive: true });
+writeFileSync("/output/entry.txt", LINE, "utf8");
+chmodSync("/output/entry.txt", 0o644);
+
+const back = readFileSync("/output/entry.txt", "utf8");
+if (back !== LINE) {
+  throw new Error("read-back mismatch: /output/entry.txt does not equal the line");
 }
 
-function verifyWritten(path: string, expected: string): void {
-  const back = readFileSync(path, "utf8");
-  if (back !== expected) {
-    throw new Error("read-back mismatch: entry.txt differs from LINE");
-  }
-}
-
-const outDir = "/output";
-mkdirSync(outDir, { recursive: true });
-assertGate(LINE);
-writeFileSync(`${outDir}/entry.txt`, LINE, "utf8");
-verifyWritten(`${outDir}/entry.txt`, LINE);
+console.log(`Wrote ${LINE.length} chars to /output/entry.txt`);
